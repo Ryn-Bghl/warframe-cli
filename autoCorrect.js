@@ -1,4 +1,9 @@
-// Calcul de la distance de Levenshtein
+/**
+ * Calculates the Levenshtein distance between two strings.
+ * @param {string} str1 - The first string.
+ * @param {string} str2 - The second string.
+ * @returns {number} The Levenshtein distance between the two strings.
+ */
 function levenshteinDistance(str1, str2) {
   const s1 = str1.toLowerCase();
   const s2 = str2.toLowerCase();
@@ -29,14 +34,25 @@ function levenshteinDistance(str1, str2) {
   return matrix[s2.length][s1.length];
 }
 
-// Calcul du score de similarité (0-100%)
+/**
+ * Calculates the similarity score (0-100%) between two strings.
+ * @param {string} str1 - The first string.
+ * @param {string} str2 - The second string.
+ * @returns {number} The similarity score (0-100%) between the two strings.
+ */
 function calculateSimilarity(str1, str2) {
   const distance = levenshteinDistance(str1, str2);
   const maxLength = Math.max(str1.length, str2.length);
   return ((1 - distance / maxLength) * 100).toFixed(2);
 }
 
-// Fonction principale d'auto-correction
+/**
+ * Finds the closest string matches from a list.
+ * @param {string} input - The input string.
+ * @param {string[]} itemList - The list of strings to search.
+ * @param {number} topN - The number of top matches to return (default: 5).
+ * @returns {Object[]} An array of objects containing the closest matches with their scores.
+ */
 function autoCorrect(input, itemList, topN = 5) {
   if (!input || !input.trim()) {
     return [];
