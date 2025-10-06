@@ -1,10 +1,20 @@
 import "dotenv/config";
 
 /**
- * Récupère le token JWT après avoir envoyé une requête d'authentification
- * à l'API Warframe Market.
- * @returns {Promise<string>} Le token JWT obtenu ou null si une erreur survient
+ * Récupère la liste des slugs des objets du marché Warframe.
+ * @returns {Promise<string[]>} La liste des slugs des objets du marché Warframe
+ * @throws {Error} Si une erreur survient lors de la récupération des données
  */
+async function getItems() {
+  try {
+    const response = await fetch("https://api.warframe.market/v2/items");
+    const items = await response.json();
+    return items.data.map((item) => item.slug);
+  } catch (error) {
+    throw new Error(error);
+  }
+}
+
 /**
  * Récupère le token JWT après avoir envoyé une requête d'authentification
  * à l'API Warframe Market.
