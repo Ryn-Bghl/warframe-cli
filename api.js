@@ -5,7 +5,7 @@ import "dotenv/config";
  * @returns {Promise<string[]>} La liste des slugs des objets du marché Warframe
  * @throws {Error} Si une erreur survient lors de la récupération des données
  */
-async function getItems() {
+export async function getItems() {
   try {
     const response = await fetch("https://api.warframe.market/v2/items");
     const items = await response.json();
@@ -21,7 +21,7 @@ async function getItems() {
  * @returns {Promise<string>} Le token JWT obtenu ou null si une erreur survient
  * @throws {Error} Si l'authentification échoue
  */
-async function getJWT() {
+export async function getJWT() {
   try {
     const response = await fetch("https://api.warframe.market/v1/auth/signin", {
       method: "POST",
@@ -51,7 +51,7 @@ async function getJWT() {
  * @param {number} orderData.rank - Le rang de l'objet (par exemple, 1 pour un objet de rang 1) (facultatif)
  * @returns {Promise<void>} La promise qui sera résolue une fois la commande créée
  */
-async function setOrder(JWT, orderData) {
+export async function setOrder(JWT, orderData) {
   try {
     const response = await fetch("https://api.warframe.market/v2/order", {
       method: "POST",
@@ -69,7 +69,7 @@ async function setOrder(JWT, orderData) {
   }
 }
 
-async function getItemId(itemName) {
+export async function getItemId(itemName) {
   try {
     const response = await fetch(
       `https://api.warframe.market/v2/item/${itemName}`
@@ -80,5 +80,3 @@ async function getItemId(itemName) {
     console.error(error);
   }
 }
-
-export { getJWT, setOrder, getItemId, getItems };
