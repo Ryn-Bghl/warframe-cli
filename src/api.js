@@ -9,7 +9,7 @@ export async function getItems() {
   try {
     const response = await fetch("https://api.warframe.market/v2/items");
     const items = await response.json();
-    return items.data.map((item) => item.slug.replaceAll("_", " "));
+    return items.data.map((item) => item.slug);
   } catch (error) {
     console.error(error);
   }

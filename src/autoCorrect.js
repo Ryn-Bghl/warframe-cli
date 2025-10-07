@@ -4,7 +4,7 @@
  * @param {string} str2 - The second string.
  * @returns {number} The Levenshtein distance between the two strings.
  */
-function levenshteinDistance(str1, str2) {
+export function levenshteinDistance(str1, str2) {
   const s1 = str1.toLowerCase();
   const s2 = str2.toLowerCase();
   const matrix = [];
@@ -53,7 +53,7 @@ function calculateSimilarity(str1, str2) {
  * @param {number} topN - The number of top matches to return (default: 5).
  * @returns {Object[]} An array of objects containing the closest matches with their scores.
  */
-function autoCorrect(input, itemList, topN = 5) {
+export function autoCorrect(input, itemList, topN = 5) {
   if (!input || !input.trim()) {
     return [];
   }
@@ -70,5 +70,3 @@ function autoCorrect(input, itemList, topN = 5) {
 
   return matches;
 }
-
-export { autoCorrect };

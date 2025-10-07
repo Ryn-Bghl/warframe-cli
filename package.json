@@ -4,7 +4,8 @@
   "description": "",
   "main": "main.js",
   "scripts": {
-    "dev": "node main.js"
+    "dev": "node ./src/main.js",
+    "test": "node ./src/test.js"
   },
   "keywords": [],
   "author": "",
