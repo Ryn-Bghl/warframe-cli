@@ -60,7 +60,7 @@ This will start the `main.js` script, which will:
 ## Code Overview
 
 -   **`main.js`**: The main entry point for the application. This is the file you will modify to build your automation logic.
--   **`api.js`**: Handles all communication with the Warframe Market API, including authentication (`getJWT`), order creation (`createOrder`), and item lookups (`getItemId`).
+-   **`api.js`**: Handles all communication with the Warframe Market API, including authentication (`getJWT`), order creation (`setOrder`), and item lookups (`getItemId`).
 -   **`autoCorrect.js`**: Provides a utility function (`autoCorrect`) to find the closest string matches from a list, which is useful for correcting item names.
 -   **`formatCode.js`**: (Assumed purpose) A helper to format the output for better readability in the console.
 

@@ -51,7 +51,7 @@ async function getJWT() {
  * @param {number} orderData.rank - Le rang de l'objet (par exemple, 1 pour un objet de rang 1) (facultatif)
  * @returns {Promise<void>} La promise qui sera résolue une fois la commande créée
  */
-async function createOrder(JWT, orderData) {
+async function setOrder(JWT, orderData) {
   try {
     const response = await fetch("https://api.warframe.market/v2/order", {
       method: "POST",
@@ -81,4 +81,4 @@ async function getItemId(itemName) {
   }
 }
 
-export { getJWT, createOrder, getItemId };
+export { getJWT, setOrder, getItemId };
