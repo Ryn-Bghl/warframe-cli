@@ -11,7 +11,7 @@ async function getItems() {
     const items = await response.json();
     return items.data.map((item) => item.slug);
   } catch (error) {
-    throw new Error(error);
+    console.error(error);
   }
 }
 
@@ -35,7 +35,7 @@ async function getJWT() {
     const JWT = response.headers.get("Authorization").split(" ")[1];
     return JWT;
   } catch (err) {
-    throw new Error("Échec de l'authentification: " + err.message);
+    console.error("Échec de l'authentification: " + err.message);
   }
 }
 
@@ -65,7 +65,7 @@ async function setOrder(JWT, orderData) {
     const data = await response.json();
     return data;
   } catch (error) {
-    throw new Error(error);
+    console.error(error);
   }
 }
 
@@ -77,8 +77,8 @@ async function getItemId(itemName) {
     const item = await response.json();
     return item.data.id;
   } catch (error) {
-    throw new Error(error);
+    console.error(error);
   }
 }
 
-export { getJWT, setOrder, getItemId };
+export { getJWT, setOrder, getItemId, getItems };
