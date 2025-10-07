@@ -1,23 +1,15 @@
 import { autoCorrect } from "./autoCorrect.js";
 import { formatResults } from "./formatCode.js";
-import { setOrder, getItemId, getJWT } from "./api.js";
+import { setOrder, getItemId, getJWT, getItems } from "./api.js";
 
 async function main() {
   const JWT = await getJWT();
 
   // Utilisation avec une liste statique
-  const technologies = [
-    "JavaScript",
-    "Python",
-    "React",
-    "Node.js",
-    "HTML",
-    "CSS",
-  ];
+  const items = await getItems();
 
-  console.log("JWT obtenu:", JWT);
-  const input = "pthn";
-  const results = autoCorrect(input, technologies, 5, true);
+  const input = "nekros prime blueprint";
+  const results = autoCorrect(input, items, 5);
   console.log("Résultats formatés:\n", formatResults(results));
   console.log(
     await setOrder(JWT, {
