@@ -32,6 +32,9 @@ export async function getJWT() {
       },
       body: `{"auth_type":"header","email":"${process.env.EMAIL}","password":"${process.env.PASSWORD}","device_id":"DEV"}`,
     });
+    if (!response.ok) {
+      throw new Error("Network error: " + response.status);
+    }
     const JWT = response.headers.get("Authorization").split(" ")[1];
     return JWT;
   } catch (err) {
@@ -57,7 +60,7 @@ export async function setOrder(JWT, orderData) {
       method: "POST",
       headers: {
         "User-Agent": "insomnia/11.2.0",
-        Authorization: "bearer " + JWT,
+        Authorization: `Bearer ${JWT}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify(orderData),
@@ -78,5 +81,85 @@ export async function getItemId(itemName) {
     return item.data.id;
   } catch (error) {
     console.error(error);
+  }
+}
+
+export async function updateOrder(
+  JWT,
+  orderData,
+  orderId,
+  callBack = () => {}
+) {
+  try {
+    const response = await fetch(
+      `https://api.warframe.market/v2/order/${orderId}`,
+      {
+        method: "PATCH",
+        headers: {
+          "User-Agent": "insomnia/11.2.0",
+          Authorization: `Bearer ${JWT}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(orderData),
+      }
+    );
+    const data = await response.json();
+    callBack(data);
+    return data;
+  } catch (error) {
+    console.error(error);
+  }
+}
+
+export async function getUserOrders(userName) {
+  try {
+    const response = await fetch(
+      `https://api.warframe.market/v2/orders/user/${userName.toLowerCase()}?limit=100`
+    );
+    const orders = await response.json();
+    return orders.data.sort((a, b) => b.platinum - a.platinum);
+  } catch (error) {
+    console.error(error);
+  }
+}
+
+export async function getMyOrders(JWT, callBack = () => {}) {
+  try {
+    const response = await fetch("https://api.warframe.market/v2/orders/my", {
+      headers: {
+        "User-Agent": "insomnia/11.2.0",
+        Authorization: `Bearer ${JWT}`,
+      },
+    });
+    const orders = await response.json();
+    callBack(orders);
+    return orders.data.sort((a, b) => b.platinum - a.platinum);
+  } catch (error) {
+    console.log("No orders found");
+    return [];
+  }
+}
+
+export async function getItemOrders(itemId) {
+  try {
+    const response = await fetch(
+      `https://api.warframe.market/v2/orders/item/${itemId}?limit=100`
+    );
+    const orders = await response.json();
+    return orders.data.sort((a, b) => b.platinum - a.platinum);
+  } catch (error) {
+    console.error(error);
+  }
+}
+
+export async function getItemNameById(itemId) {
+  try {
+    const response = await fetch("https://api.warframe.market/v2/items");
+    const items = await response.json();
+    const item = items.data.find((item) => item.id === itemId);
+    return item ? item.slug : null;
+  } catch (error) {
+    console.error(error);
+    return null;
   }
 }

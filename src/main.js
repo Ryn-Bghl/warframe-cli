@@ -1,28 +1,51 @@
 import { autoCorrect } from "./autoCorrect.js";
 import { formatResults } from "./formatCode.js";
-import { setOrder, getItemId, getJWT, getItems } from "./api.js";
+import {
+  setOrder,
+  getItemId,
+  getJWT,
+  getItems,
+  getMyOrders,
+  getItemOrders,
+  getItemNameById,
+  updateOrder,
+} from "./api.js";
 import { setTitle } from "./prompt/title.js";
 
 async function main() {
-  setTitle();
-  const JWT = await getJWT();
+  try {
+    const JWT = await getJWT();
+    const myOrders = await getMyOrders(JWT);
 
-  // Utilisation avec une liste statique
-  const items = await getItems();
+    for (const order of myOrders) {
+      const ingameSellOrders = (await getItemOrders(order.itemId)).filter(
+        (order) => order.user.status === "ingame" && order.type === "sell"
+      );
 
-  const input = "nekro prime set";
-  const results = autoCorrect(input, items, 5);
-  // console.log("Résultats formatés:\n", formatResults(results));
-  // console.log(
-  //   // TOFIX: NOT PRACTICAL
-  //   await setOrder(JWT, {
-  //     type: "sell",
-  //     itemId: await getItemId("nekros_prime_set"),
-  //     quantity: 1,
-  //     platinum: 50,
-  //     visible: false,
-  //   })
-  // );
+      const sortedOrders = ingameSellOrders.sort(
+        (a, b) => a.platinum - b.platinum
+      );
+
+      const fifthSellOrder =
+        sortedOrders.length > 4
+          ? sortedOrders[4].platinum
+          : sortedOrders[sortedOrders.length - 1].platinum;
+
+      console.log(await getItemNameById(order.itemId), fifthSellOrder);
+
+      // for each order update it with the fifth sell order
+      await updateOrder(
+        JWT,
+        {
+          platinum: fifthSellOrder,
+        },
+        order.id
+      );
+      await new Promise((resolve) => setTimeout(resolve, 500));
+    }
+  } catch (error) {
+    console.error(error);
+  }
 }
 
 main();

@@ -5,7 +5,8 @@
   "main": "main.js",
   "scripts": {
     "dev": "node ./src/main.js",
-    "test": "node ./src/test.js"
+    "test": "node ./src/test.js",
+    "api": "node ./src/api.js"
   },
   "keywords": [],
   "author": "",
