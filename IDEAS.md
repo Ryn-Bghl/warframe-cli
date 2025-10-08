@@ -8,6 +8,7 @@
 
 [x] getItems
 [x] getItemId
+[x] getItemNameById
 
 #### ORDERS
 
