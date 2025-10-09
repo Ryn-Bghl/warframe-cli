@@ -4,7 +4,11 @@
   "description": "",
   "main": "main.js",
   "scripts": {
-    "dev": "node ./src/main.js",
+    "start": "node ./src/main.js",
+    "update": "node ./src/main.js --update",
+    "import": "node ./src/main.js --import",
+    "import:file": "node ./src/main.js --import",
+    "full": "node ./src/main.js --update --import",
     "test": "node ./src/test.js",
     "api": "node ./src/api.js"
   },
