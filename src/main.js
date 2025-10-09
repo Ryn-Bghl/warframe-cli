@@ -1,65 +1,24 @@
-import { autoCorrect } from "./autoCorrect.js";
-import { formatResults } from "./formatCode.js";
 import {
   setOrder,
   getItemId,
   getJWT,
-  getItems,
   getMyOrders,
   getItemOrders,
   getItemNameById,
   updateOrder,
 } from "./api.js";
-import { setTitle } from "./prompt/title.js";
 import { getCrackedItems } from "./import.js";
+import * as clack from "@clack/prompts";
+import { setTimeout as delay } from "node:timers/promises";
+import color from "picocolors";
 
-// ANSI color codes for better console output
-const colors = {
-  reset: "\x1b[0m",
-  bright: "\x1b[1m",
-  dim: "\x1b[2m",
-
-  // Foreground colors
-  black: "\x1b[30m",
-  red: "\x1b[31m",
-  green: "\x1b[32m",
-  yellow: "\x1b[33m",
-  blue: "\x1b[34m",
-  magenta: "\x1b[35m",
-  cyan: "\x1b[36m",
-  white: "\x1b[37m",
-
-  // Background colors
-  bgBlack: "\x1b[40m",
-  bgRed: "\x1b[41m",
-  bgGreen: "\x1b[42m",
-  bgYellow: "\x1b[43m",
-  bgBlue: "\x1b[44m",
-  bgMagenta: "\x1b[45m",
-  bgCyan: "\x1b[46m",
-  bgWhite: "\x1b[47m",
-};
-
-// Helper functions for colored logging
-const log = {
-  info: (msg) => console.log(`${colors.blue}ℹ ${msg}${colors.reset}`),
-  success: (msg) => console.log(`${colors.green}✓ ${msg}${colors.reset}`),
-  warning: (msg) => console.log(`${colors.yellow}⚠ ${msg}${colors.reset}`),
-  error: (msg) => console.error(`${colors.red}✗ ${msg}${colors.reset}`),
-  header: (msg) =>
-    console.log(
-      `\n${colors.bright}${colors.cyan}${"=".repeat(50)}\n${msg}\n${"=".repeat(
-        50
-      )}${colors.reset}\n`
-    ),
-  item: (name, price) =>
-    console.log(
-      `${colors.magenta}${name}${colors.reset} → ${colors.bgBlack}${colors.bright}${colors.yellow}${price}p${colors.reset}`
-    ),
-};
-
-// Delay helper with progress indicator
-const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+const banner = `
+██╗    ██╗ █████╗ ██████╗ ███████╗██████╗  █████╗ ███╗   ███╗███████╗     ██████╗██╗     ██╗
+██║    ██║██╔══██╗██╔══██╗██╔════╝██╔══██╗██╔══██╗████╗ ████║██╔════╝    ██╔════╝██║     ██║
+██║ █╗ ██║███████║██████╔╝█████╗  ██████╔╝███████║██╔████╔██║█████╗█████╗██║     ██║     ██║
+██║███╗██║██╔══██║██╔══██╗██╔══╝  ██╔══██╗██╔══██║██║╚██╔╝██║██╔══╝╚════╝██║     ██║     ██║
+╚███╔███╔╝██║  ██║██║  ██║██║     ██║  ██║██║  ██║██║ ╚═╝ ██║███████╗    ╚██████╗███████╗██║
+ ╚══╝╚══╝ ╚═╝  ╚═╝╚═╝  ╚═╝╚═╝     ╚═╝  ╚═╝╚═╝  ╚═╝╚═╝     ╚═╝╚══════╝     ╚═════╝╚══════╝╚═╝`;
 
 /**
  * Calculate the optimal price based on ingame sell orders
@@ -72,9 +31,13 @@ const calculateOptimalPrice = (orders) => {
   }
 
   const sortedOrders = orders.sort((a, b) => a.platinum - b.platinum);
-  return sortedOrders.length > 4
-    ? sortedOrders[3].platinum
-    : sortedOrders[sortedOrders.length - 1].platinum;
+
+  if (sortedOrders.length < 5) {
+    const middleIndex = Math.floor(sortedOrders.length / 2);
+    return sortedOrders[middleIndex].platinum;
+  }
+
+  return sortedOrders[3].platinum;
 };
 
 /**
@@ -85,7 +48,7 @@ const calculateOptimalPrice = (orders) => {
 const getIngameSellOrders = async (itemId) => {
   const orders = await getItemOrders(itemId);
   return orders.filter(
-    (order) => order.user.status === "ingame" && order.type === "sell"
+    (order) => order.user.status === "ingame" && order.type === "sell",
   );
 };
 
@@ -93,41 +56,65 @@ const getIngameSellOrders = async (itemId) => {
  * Update all existing orders with optimal pricing
  * @param {Array} orders - User's current orders
  * @param {string} JWT - Authentication token
- * @returns {Promise<void>}
+ * @returns {Promise<Object>} Stats object with success and fail counts
  */
 async function updateMyOrders(orders, JWT) {
-  log.header("📝 Updating Existing Orders");
+  const s = clack.spinner();
+  s.start("Updating existing orders");
 
   let successCount = 0;
   let failCount = 0;
+  const results = [];
 
   for (const order of orders) {
     try {
       const itemName = await getItemNameById(order.itemId);
+      s.message(`Processing ${color.magenta(itemName)}`);
+
       const ingameSellOrders = await getIngameSellOrders(order.itemId);
 
       if (ingameSellOrders.length === 0) {
-        log.warning(`No ingame orders found for ${itemName}`);
+        clack.log.warning(`No ingame orders found for ${itemName}`);
         continue;
       }
 
       const optimalPrice = calculateOptimalPrice(ingameSellOrders);
-      log.item(itemName, optimalPrice);
 
       await updateOrder(JWT, { platinum: optimalPrice }, order.id);
 
       successCount++;
-      log.success(`Updated ${itemName}`);
+      results.push({
+        name: itemName,
+        price: optimalPrice,
+        status: "success",
+      });
+
       await delay(500);
     } catch (error) {
       failCount++;
-      log.error(`Failed to update order: ${error.message}`);
+      clack.log.error(`Failed to update order: ${error.message}`);
     }
   }
 
-  console.log(`\n${colors.bright}Summary:${colors.reset}`);
-  log.success(`Successfully updated: ${successCount}`);
-  if (failCount > 0) log.error(`Failed: ${failCount}`);
+  s.stop("Orders updated");
+
+  // Display results
+  for (const result of results) {
+    clack.log.success(
+      `${color.magenta(result.name)} → ${color.bgBlack(
+        color.yellow(` ${result.price}p `),
+      )}`,
+    );
+  }
+
+  clack.note(
+    `${color.green(`✓ Successfully updated: ${successCount}`)}\n${
+      failCount > 0 ? color.red(`✗ Failed: ${failCount}`) : ""
+    }`,
+    "Update Summary",
+  );
+
+  return { successCount, failCount };
 }
 
 /**
@@ -135,39 +122,47 @@ async function updateMyOrders(orders, JWT) {
  * @param {string} filePath - Path to the items file
  * @param {string} JWT - Authentication token
  * @param {Array} myOrders - User's existing orders
- * @returns {Promise<void>}
+ * @returns {Promise<Object>} Stats object with created, updated, and failed counts
  */
 async function importOrders(filePath, JWT, myOrders) {
-  log.header("📦 Importing Orders from File");
-  log.info(`Reading file: ${filePath}`);
+  const s = clack.spinner();
+  s.start(`Reading file: ${filePath}`);
 
   const data = await getCrackedItems(filePath);
   const totalItems = Object.keys(data).length;
+
+  s.stop(`Found ${totalItems} items to import`);
+
   let current = 0;
   let created = 0;
   let updated = 0;
   let failed = 0;
+  const results = [];
+
+  const importSpinner = clack.spinner();
+  importSpinner.start("Importing orders");
 
   for (const [itemName, quantity] of Object.entries(data)) {
     current++;
-    console.log(`\n${colors.dim}[${current}/${totalItems}]${colors.reset}`);
-    log.info(`Processing: ${itemName} x${quantity}`);
+    importSpinner.message(
+      `[${current}/${totalItems}] Processing ${color.cyan(
+        itemName,
+      )} x${quantity}`,
+    );
 
     try {
       const itemId = await getItemId(itemName);
       const ingameSellOrders = await getIngameSellOrders(itemId);
 
       if (ingameSellOrders.length === 0) {
-        log.warning(`No ingame orders found for ${itemName}, skipping...`);
+        clack.log.warning(
+          `No ingame orders found for ${itemName}, skipping...`,
+        );
         failed++;
         continue;
       }
 
-      log.info(`Found ${ingameSellOrders.length} ingame sell orders`);
-
       const optimalPrice = calculateOptimalPrice(ingameSellOrders);
-      log.item(itemName, optimalPrice);
-
       const existingOrder = myOrders.find((order) => order.itemId === itemId);
 
       if (existingOrder) {
@@ -177,10 +172,15 @@ async function importOrders(filePath, JWT, myOrders) {
             platinum: optimalPrice,
             quantity: existingOrder.quantity + quantity,
           },
-          existingOrder.id
+          existingOrder.id,
         );
         updated++;
-        log.success(`Updated order: ${itemName} x${quantity}`);
+        results.push({
+          name: itemName,
+          quantity,
+          price: optimalPrice,
+          action: "updated",
+        });
       } else {
         await setOrder(JWT, {
           itemId,
@@ -190,53 +190,44 @@ async function importOrders(filePath, JWT, myOrders) {
           type: "sell",
         });
         created++;
-        log.success(`Created new order: ${itemName} x${quantity}`);
+        results.push({
+          name: itemName,
+          quantity,
+          price: optimalPrice,
+          action: "created",
+        });
       }
 
       await delay(500);
     } catch (error) {
       failed++;
-      log.error(`Failed to process ${itemName}: ${error.message}`);
+      clack.log.error(`Failed to process ${itemName}: ${error.message}`);
     }
   }
 
-  console.log(`\n${colors.bright}Import Summary:${colors.reset}`);
-  log.success(`Created: ${created}`);
-  log.success(`Updated: ${updated}`);
-  if (failed > 0) log.error(`Failed: ${failed}`);
-}
+  importSpinner.stop("Import completed");
 
-/**
- * Display help information
- */
-function displayHelp() {
-  console.log(`
-${colors.bright}${colors.cyan}Order Management System - CLI Tool${colors.reset}
+  // Display results
+  for (const result of results) {
+    const action =
+      result.action === "created"
+        ? color.green("CREATED")
+        : color.blue("UPDATED");
+    clack.log.info(
+      `${action} ${color.magenta(result.name)} x${
+        result.quantity
+      } → ${color.bgBlack(color.yellow(` ${result.price}p `))}`,
+    );
+  }
 
-${colors.bright}Usage:${colors.reset}
-  node main.js [options]
+  clack.note(
+    `${color.green(`✓ Created: ${created}`)}\n${color.blue(
+      `✓ Updated: ${updated}`,
+    )}${failed > 0 ? "\n" + color.red(`✗ Failed: ${failed}`) : ""}`,
+    "Import Summary",
+  );
 
-${colors.bright}Options:${colors.reset}
-  ${colors.green}--update${colors.reset}              Update all existing orders with optimal pricing
-  ${colors.green}--import${colors.reset} <file>       Import orders from a file (default: ./items.txt)
-  ${colors.green}--help${colors.reset}, ${colors.green}-h${colors.reset}          Display this help message
-
-${colors.bright}Examples:${colors.reset}
-  ${colors.dim}# Update existing orders${colors.reset}
-  node main.js --update
-
-  ${colors.dim}# Import orders from default file${colors.reset}
-  node main.js --import
-
-  ${colors.dim}# Import orders from specific file${colors.reset}
-  node main.js --import ./my-items.txt
-
-  ${colors.dim}# Update existing orders and import new ones${colors.reset}
-  node main.js --update --import
-
-  ${colors.dim}# Update and import from specific file${colors.reset}
-  node main.js --update --import ./custom-items.txt
-`);
+  return { created, updated, failed };
 }
 
 /**
@@ -264,14 +255,12 @@ function parseArgs() {
         break;
       case "--import":
         options.import = true;
-        // Check if next argument is a file path
         if (args[i + 1] && !args[i + 1].startsWith("--")) {
           options.importFile = args[i + 1];
-          i++; // Skip next argument since we consumed it
+          i++;
         }
         break;
       default:
-        log.warning(`Unknown argument: ${arg}`);
         break;
     }
   }
@@ -280,43 +269,109 @@ function parseArgs() {
 }
 
 /**
+ * Interactive mode using Clack prompts
+ */
+async function interactiveMode(JWT, myOrders) {
+  const action = await clack.select({
+    message: "What would you like to do?",
+    options: [
+      {
+        value: "update",
+        label: "Update existing orders",
+        hint: "Refresh prices for all orders",
+      },
+      {
+        value: "import",
+        label: "Import orders from file",
+        hint: "Add new orders from a file",
+      },
+      { value: "both", label: "Update and Import", hint: "Do both operations" },
+      { value: "exit", label: "Exit", hint: "Quit the program" },
+    ],
+  });
+
+  if (clack.isCancel(action) || action === "exit") {
+    clack.cancel("Operation cancelled");
+    process.exit(0);
+  }
+
+  if (action === "update" || action === "both") {
+    await updateMyOrders(myOrders, JWT);
+  }
+
+  if (action === "import" || action === "both") {
+    const filePath = await clack.text({
+      message: "Enter the path to your items file:",
+      placeholder: "./items.txt",
+      defaultValue: "./items.txt",
+    });
+
+    if (clack.isCancel(filePath)) {
+      clack.cancel("Operation cancelled");
+      process.exit(0);
+    }
+
+    const currentOrders = action === "both" ? await getMyOrders(JWT) : myOrders;
+    await importOrders(filePath, JWT, currentOrders);
+  }
+}
+
+/**
  * Main execution function
  */
 async function main() {
+  console.clear();
+
+  clack.intro(color.cyan(banner));
+
   const options = parseArgs();
 
-  // Display help if requested or no options provided
-  if (options.help || (!options.update && !options.import)) {
-    displayHelp();
+  // Help mode
+  if (options.help) {
+    clack.note(
+      `${color.bold("Usage:")}\n  node main.js [options]\n\n${color.bold(
+        "Options:",
+      )}\n  --update              Update all existing orders\n  --import <file>       Import orders from file\n  --help, -h           Display this help\n\n${color.bold(
+        "Examples:",
+      )}\n  node main.js --update\n  node main.js --import\n  node main.js --update --import`,
+      "CLI Help",
+    );
     return;
   }
 
   try {
-    log.header("🚀 Order Management System");
-
-    log.info("Authenticating...");
+    const authSpinner = clack.spinner();
+    authSpinner.start("Authenticating...");
     const JWT = await getJWT();
-    log.success("Authentication successful");
+    authSpinner.stop("Authentication successful");
 
-    log.info("Fetching your current orders...");
+    const ordersSpinner = clack.spinner();
+    ordersSpinner.start("Fetching your orders...");
     const myOrders = await getMyOrders(JWT);
-    log.success(`Found ${myOrders.length} existing orders`);
+    ordersSpinner.stop(`Found ${color.cyan(myOrders.length)} existing orders`);
 
-    // Execute based on CLI arguments
-    if (options.update) {
-      await updateMyOrders(myOrders, JWT);
+    // Interactive mode if no arguments
+    if (!options.update && !options.import) {
+      await interactiveMode(JWT, myOrders);
+    } else {
+      // CLI mode
+      if (options.update) {
+        await updateMyOrders(myOrders, JWT);
+      }
+
+      if (options.import) {
+        const currentOrders = options.update
+          ? await getMyOrders(JWT)
+          : myOrders;
+        await importOrders(options.importFile, JWT, currentOrders);
+      }
     }
 
-    if (options.import) {
-      // Refresh orders if we just updated them
-      const currentOrders = options.update ? await getMyOrders(JWT) : myOrders;
-      await importOrders(options.importFile, JWT, currentOrders);
-    }
-
-    log.header("✨ All operations completed successfully!");
+    clack.outro(color.green("All operations completed successfully! ✨"));
   } catch (error) {
-    log.error(`Fatal error: ${error.message}`);
+    clack.log.error(`Fatal error: ${error.message}`);
     console.error(error);
+    clack.outro(color.red("Operation failed"));
     process.exit(1);
   }
 }

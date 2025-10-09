@@ -75,7 +75,7 @@ export async function setOrder(JWT, orderData) {
 export async function getItemId(itemName) {
   try {
     const response = await fetch(
-      `https://api.warframe.market/v2/item/${itemName}`
+      `https://api.warframe.market/v2/item/${itemName}`,
     );
     const item = await response.json();
     return item.data.id;
@@ -88,7 +88,7 @@ export async function updateOrder(
   JWT,
   orderData,
   orderId,
-  callBack = () => {}
+  callBack = () => {},
 ) {
   try {
     const response = await fetch(
@@ -101,7 +101,7 @@ export async function updateOrder(
           "Content-Type": "application/json",
         },
         body: JSON.stringify(orderData),
-      }
+      },
     );
     const data = await response.json();
     callBack(data);
@@ -114,7 +114,7 @@ export async function updateOrder(
 export async function getUserOrders(userName) {
   try {
     const response = await fetch(
-      `https://api.warframe.market/v2/orders/user/${userName.toLowerCase()}?limit=100`
+      `https://api.warframe.market/v2/orders/user/${userName.toLowerCase()}?limit=100`,
     );
     const orders = await response.json();
     return orders.data.sort((a, b) => b.platinum - a.platinum);
@@ -136,6 +136,7 @@ export async function getMyOrders(JWT, callBack = () => {}) {
     return orders.data.sort((a, b) => b.platinum - a.platinum);
   } catch (error) {
     console.log("No orders found");
+    console.error(error);
     return [];
   }
 }
@@ -143,7 +144,7 @@ export async function getMyOrders(JWT, callBack = () => {}) {
 export async function getItemOrders(itemId) {
   try {
     const response = await fetch(
-      `https://api.warframe.market/v2/orders/item/${itemId}?limit=100`
+      `https://api.warframe.market/v2/orders/item/${itemId}?limit=100`,
     );
     const orders = await response.json();
     return orders.data.sort((a, b) => b.platinum - a.platinum);

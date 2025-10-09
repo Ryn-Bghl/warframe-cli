@@ -23,16 +23,16 @@ A Node.js-based command-line tool designed to automate interactions with the [Wa
 
 1. **Clone the repository:**
 
-    ```bash
-    git clone https://github.com/Ryn-Bghl/wfm-automanager.git
-    cd wfm-automanager
-    ```
+   ```bash
+   git clone https://github.com/Ryn-Bghl/wfm-automanager.git
+   cd wfm-automanager
+   ```
 
 2. **Install dependencies:**
 
-    ```bash
-    npm install
-    ```
+   ```bash
+   npm install
+   ```
 
 ## Configuration
 
@@ -42,12 +42,12 @@ This project uses environment variables to handle your sensitive login credentia
 
 2. Add the following lines to the `.env` file, replacing the placeholder values with your actual Warframe Market credentials:
 
-    ```env
-    EMAIL=your_email@example.com
-    PASSWORD=your_secret_password
-    ```
+   ```env
+   EMAIL=your_email@example.com
+   PASSWORD=your_secret_password
+   ```
 
-    **Important**: The `.gitignore` file is already configured to ignore `.env` files, preventing you from accidentally committing your credentials to a public repository. Do not change this.
+   **Important**: The `.gitignore` file is already configured to ignore `.env` files, preventing you from accidentally committing your credentials to a public repository. Do not change this.
 
 ## Usage
 

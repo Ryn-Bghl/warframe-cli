@@ -19,6 +19,9 @@
 [x] getUserOrder
 [x] getMyOrders
 
+[x] update all my orders
+[ ] update one order
+
 #### AUTHENTIFICATION
 
 [x] getJWT
